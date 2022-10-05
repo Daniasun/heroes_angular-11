@@ -1,0 +1,23 @@
+{
+  "heroes": {
+    "castellano": "Castellano",
+    "ingles": "Inglés",
+    "nombre_app": "heroes",
+    "titulo": "Bienvenido a Heroes!",
+    "link_listado": "Mostrar listado de SuperHeroes",
+    "busqueda": "Búsqueda",
+    "busqueda_id": "Búsqueda por id",
+    "aniadir": "Añadir",
+    "id": "ID",
+    "nombre": "Nombre",
+    "editar_eliminar": "Editar / Eliminar",
+    "editar": "Editar",
+    "eliminar": "Eliminar",
+    "form_aniadir": "Formulario añadir Superheroe",
+    "form_editar": "Formulario editar Superheroe",
+    "requerido": "Requerido",
+    "seguro": "¿Estás seguro?",
+    "no": "No",
+    "si": "Si"
+  }
+}

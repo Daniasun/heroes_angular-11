@@ -1,0 +1,18 @@
+.required-feedback{
+  display: block !important;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: #dc3545;
+}
+::ng-deep .mat-paginator{
+  background-color: brown;
+  color: gold;
+  font-size: 1rem;
+}
+
+::ng-deep .mat-header-cell{
+  font-size: 1rem;
+  background-color: brown;
+  color: gold;
+}

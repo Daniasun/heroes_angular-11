@@ -1,0 +1,13 @@
+<div class="d-flex flex-row">
+  <!--componente idiomas-->
+  <app-cambio-idioma></app-cambio-idioma>
+</div>
+<div style="text-align:center">
+  <h1>
+    {{ 'heroes.titulo' | translate}}
+  </h1>
+  <div class="m-3">
+    <a routerLink="tabla-heroes"> {{ 'heroes.link_listado' | translate}}</a>
+  </div>
+</div>
+<router-outlet></router-outlet>
