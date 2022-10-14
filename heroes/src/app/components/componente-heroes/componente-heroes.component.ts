@@ -33,7 +33,8 @@ export class ComponenteHeroesComponent implements OnInit {
               private dialogo: MatDialog,
               private translateService: TranslateService,
               private router: Router,
-              private route: ActivatedRoute) {
+              private route: ActivatedRoute,
+              private spinnerService: SpinnerService) {
     this.heroeEditar$ = this.heroesService.heroeEditar.asObservable();
     this.mostrarEditar = false;
     this.mostrarAniadir = false;
@@ -93,6 +94,8 @@ export class ComponenteHeroesComponent implements OnInit {
       },
       error => {
         console.log(error);
+        setTimeout((() => this.spinnerService.hideSpinner()), 1000);
+
       });
   }
   public buscarPorId(): void{
@@ -104,6 +107,7 @@ export class ComponenteHeroesComponent implements OnInit {
       },
       error => {
         this.recargar([]);
+        setTimeout((() => this.spinnerService.hideSpinner()), 1000);
       });
   }
   public recargar(resultado: any): void {
