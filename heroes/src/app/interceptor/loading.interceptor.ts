@@ -15,7 +15,7 @@ export class LoadingInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       map((event: HttpEvent<any>) => {
         if (event instanceof HttpResponse) {
-          setTimeout((() => this.spinnerService.hideSpinner()), 1000);
+          setTimeout((() => this.spinnerService.hideSpinner()), 500);
         }
         return event;
       }));
