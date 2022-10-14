@@ -33,7 +33,7 @@ export class ServicioHeroesService {
       tap(x => x.length ?
         console.log(`found heroes matching "${busqueda}"`) :
         console.log(`no heroes matching "${busqueda}"`)),
-      catchError(this.handleError('consultarHeroePorBusqueda', []))
+      catchError(this.handleError( []))
     );
   }
   public modificarHeroe(data: HeroeModel): Observable<HeroeModel> {
@@ -50,9 +50,8 @@ export class ServicioHeroesService {
     this.heroeEditarInit = heroe;
     this.heroeEditar.next(heroe);
   }
-  private handleError(operation = 'operation', result?: any): any {
-    return (error: any): Observable<any> => {
-      console.error(`${operation} failed: ${error.message}`);
+  private handleError(result?: any): any {
+    return (): Observable<any> => {
       return of(result as any);
     };
   }

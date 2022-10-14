@@ -14,8 +14,7 @@ import {FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule} f
 import {async} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {RouterTestingModule} from '@angular/router/testing';
-import {Observable, of} from 'rxjs';
-import {Router} from '@angular/router';
+import {of} from 'rxjs';
 
 const mockHeroes: HeroeModel[] = [
   {id: 1, nombre : 'Superman'},
@@ -26,19 +25,19 @@ const mockHeroes: HeroeModel[] = [
   {id: 6, nombre : 'IronMan'},
   {id: 7, nombre : 'Goku'}
 ];
-class MockRouter {
-  navigateByUrl(url: string): string { return url; }
-}
+
 describe('ComponenteHeroesComponent', () => {
   let component: ComponenteHeroesComponent;
   let fixture: ComponentFixture<ComponenteHeroesComponent>;
   let heroesService: ServicioHeroesService;
   let formBuilder: FormBuilder;
-  let routerSpy = {navigate: jasmine.createSpy('navigate')};
+  const routerSpy = {navigate: jasmine.createSpy('navigate')};
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ComponenteHeroesComponent ],
+      declarations: [
+        ComponenteHeroesComponent
+      ],
       imports: [
         ReactiveFormsModule,
         FormsModule,
@@ -196,6 +195,8 @@ describe('ComponenteHeroesComponent', () => {
     const spy = spyOn(component, 'mostrarDialogo').withArgs(1).and.stub();
     component.mostrarDialogo(1);
     expect(spy).toHaveBeenCalled();
+    component.eliminar(1);
+    heroesService.eliminarHeroe(1);
   });
   it(' mostrarFormularioEditar', () => {
     component.mostrarFormularioEditar();
