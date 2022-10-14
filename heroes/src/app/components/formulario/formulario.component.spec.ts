@@ -76,7 +76,8 @@ describe('FormularioComponent', () => {
     component.formulario.controls.nombre.setValue('SuperHeroe');
     component.mostrarEditar = true;
     component.enviar();
-    component.heroeEditar = { id: mockHeroes[mockHeroes.length - 1].id + 1, nombre: ''};
+    component.heroeEditar = { id: mockHeroes[mockHeroes.length - 1].id +
+        Math.random() * (15 - mockHeroes.length) + mockHeroes.length, nombre: ''};
     component.formulario.controls.nombreAniadir.setValue('Maradona');
     component.mostrarEditar = false;
     component.enviar();
