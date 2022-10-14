@@ -1,6 +1,6 @@
 import {ComponentFixture, inject, TestBed} from '@angular/core/testing';
 import { FormularioComponent } from './formulario.component';
-import {FormBuilder, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ServicioHeroesService} from '../../services/servicio-heroes.service';
 import {HeroeModel} from '../../models/heroe-model';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
@@ -33,7 +33,8 @@ describe('FormularioComponent', () => {
       ],
       providers: [
         ServicioHeroesService,
-        TranslateService
+        TranslateService,
+        FormBuilder
       ],
       schemas: [
         CUSTOM_ELEMENTS_SCHEMA,
@@ -42,66 +43,42 @@ describe('FormularioComponent', () => {
     })
     .compileComponents();
   });
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(FormularioComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
   beforeEach(inject([ServicioHeroesService], s => {
     heroesService = s;
     fixture = TestBed.createComponent(FormularioComponent);
     component = fixture.componentInstance;
   }));
-  beforeEach(inject([FormBuilder], s => {
-    formBuilder = s;
+  beforeEach(() => {
     fixture = TestBed.createComponent(FormularioComponent);
     component = fixture.componentInstance;
-  }));
-
+    formBuilder = TestBed.inject(FormBuilder);
+    component.heroeEditar = { id: 1, nombre: 'Superman'};
+    component.formulario = formBuilder.group({
+      nombre: new FormControl(
+        {
+          value: [component.heroeEditar.nombre]
+        }, Validators.required),
+      nombreAniadir: new FormControl(
+        {
+          value: ['']
+        }, Validators.required)
+    });
+    fixture.detectChanges();
+  });
   it('should create', () => {
     expect(component).toBeTruthy();
+    expect(component.formulario.controls).toBeTruthy();
     expect(component.requeridoEditar).toBeFalse();
     expect(component.requeridoAniadir).toBeFalse();
   });
-  it(' editar', () => {
-    component.heroeEditar = { id: 1, nombre: 'Superman'};
-    component.formEditar = formBuilder.group({
-      nombre: ['', [Validators.required]]
-    });
-    component.formEditar.setValue({
-      nombre: 'Jimmy'
-    });
-    component.editar();
-    fixture.detectChanges();
-    expect(component.formEditar.valid).toBeTrue();
-    expect(component.requeridoEditar).toBeFalse();
-    component.formEditar.setValue({
-      nombre: ''
-    });
-    component.editar();
-    fixture.detectChanges();
-    expect(component.formEditar.valid).toBeFalse();
-    expect(component.requeridoEditar).toBeTrue();
-  });
-  it(' aniadir', () => {
-    component.heroeEditar = { id: mockHeroes[mockHeroes.length - 1].id, nombre: ''};
-    component.formAniadir = formBuilder.group({
-      nombre: ['', [Validators.required]]
-    });
-    component.formAniadir.setValue({
-      nombre: 'Pepe'
-    });
-    component.aniadir();
-    fixture.detectChanges();
-    expect(component.formAniadir.valid).toBeTrue();
-    expect(component.requeridoAniadir).toBeFalse();
-    component.formAniadir.setValue({
-      nombre: ''
-    });
-    component.aniadir();
-    fixture.detectChanges();
-    expect(component.formAniadir.valid).toBeFalse();
-    expect(component.requeridoAniadir).toBeTrue();
+  it('enviar', () => {
+    component.heroeEditar = mockHeroes[0];
+    component.formulario.controls.nombre.setValue('SuperHeroe');
+    component.mostrarEditar = true;
+    component.enviar();
+    component.heroeEditar = { id: mockHeroes[mockHeroes.length - 1].id + 1, nombre: ''};
+    component.formulario.controls.nombreAniadir.setValue('Maradona');
+    component.mostrarEditar = false;
+    component.enviar();
   });
 });

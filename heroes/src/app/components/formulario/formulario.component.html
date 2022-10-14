@@ -1,29 +1,28 @@
-<form novalidate *ngIf="mostrarEditar" [formGroup]="formEditar" (ngSubmit)="editar()" class="justify-content-center">
-    <h4 class="font-weight-bold">{{ 'heroes.form_editar' | translate}}</h4>
-    <div class="form-group">
-        <input [formControl]="formEditar.controls['nombre']" formControlName="nombre"  id="nombreEditar"
-               name="nombre" type="text" class="form-control" [placeholder]="heroeEditar.nombre">
-        <div *ngIf="requeridoEditar" class="required-feedback text-left">
-            <span>{{ 'heroes.requerido' | translate }}</span>
+<form novalidate [formGroup]="formulario" (ngSubmit)="enviar()" class="justify-content-center">
+    <div *ngIf="mostrarEditar">
+        <h4 class="font-weight-bold">{{ 'heroes.form_editar' | translate}}</h4>
+        <div class="form-group">
+            <input [disabled]="!mostrarEditar" [formControl]="formulario.controls['nombre']" formControlName="nombre"  id="nombreEditar"
+                   name="nombre" type="text" class="form-control" [placeholder]="heroeEditar.nombre">
+            <div *ngIf="requeridoEditar" class="required-feedback text-left">
+                <span>{{ 'heroes.requerido' | translate }}</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <button mat-button type="submit"> {{ 'heroes.editar' | translate}} </button>
         </div>
     </div>
-    <div class="form-group">
-        <button mat-button type="submit"> {{ 'heroes.editar' | translate}} </button>
+    <div *ngIf="mostrarAniadir">
+        <h4 class="font-weight-bold">{{ 'heroes.form_aniadir' | translate}} </h4>
+        <div class="form-group">
+            <input [disabled]="!mostrarAniadir" [formControl]="formulario.controls['nombreAniadir']" formControlName="nombreAniadir" id="nombreAniadir"
+                   name="nombreAniadir" type="text" placeholder="{{ 'heroes.nombre' |translate}}" class="form-control" [placeholder]="heroeEditar.nombre">
+        </div>
+        <div *ngIf="requeridoAniadir" class="form-group required-feedback text-left">
+            <span>{{ 'heroes.requerido' | translate }}</span>
+        </div>
+        <div class="form-group">
+            <button mat-button type="submit"> {{ 'heroes.aniadir' | translate}}  </button>
+        </div>
     </div>
 </form>
-<form *ngIf="mostrarAniadir" [formGroup]="formAniadir" (ngSubmit)="aniadir()" class="justify-content-center">
-    <h4 class="font-weight-bold">{{ 'heroes.form_aniadir' | translate}} </h4>
-    <div class="form-group">
-        <input [formControl]="formAniadir.controls['nombre']" formControlName="nombre" id="nombreAniadir"
-               name="nombreAniadir" (keyup)="formAniadir.get('nombre').setValue($event.currentTarget.value)"
-               type="text" placeholder="{{ 'heroes.nombre' |translate}}" class="form-control" [placeholder]="heroeEditar.nombre">
-    </div>
-    <div *ngIf="requeridoAniadir" class="form-group required-feedback text-left">
-        <span>{{ 'heroes.requerido' | translate }}</span>
-    </div>
-
-    <div class="form-group">
-        <button mat-button type="submit"> {{ 'heroes.aniadir' | translate}}  </button>
-    </div>
-</form>
-

@@ -1,12 +1,15 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {ServicioHeroesService} from '../../services/servicio-heroes.service';
 import { HeroeModel } from '../../models/heroe-model';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup} from '@angular/forms';
 import {MatTableDataSource} from '@angular/material/table';
 import {MatPaginator} from '@angular/material/paginator';
 import {MatDialog} from '@angular/material/dialog';
 import {DialogoConfirmacionComponent} from '../dialogo-confirmacion/dialogo-confirmacion.component';
 import {TranslateService} from '@ngx-translate/core';
+import {Observable} from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
+import {SpinnerService} from '../../services/spinner.service';
 
 @Component({
   selector: 'app-componente-heroes',
@@ -14,64 +17,98 @@ import {TranslateService} from '@ngx-translate/core';
   styleUrls: ['./componente-heroes.component.scss']
 })
 export class ComponenteHeroesComponent implements OnInit {
-
+  public formBuscar: FormGroup;
+  public mostrarEditar: boolean;
+  public mostrarAniadir: boolean;
+  public heroes: HeroeModel[];
+  public heroeEditar$: Observable<HeroeModel>;
+  public ocultarForm$: Observable<boolean>;
+  public heroeEditar: HeroeModel;
+  public dataSource: MatTableDataSource<HeroeModel>;
+  public displayColumns: string[];
+  @ViewChild(MatPaginator, {static: false}) paginator: MatPaginator;
+  @ViewChild(DialogoConfirmacionComponent, {static: false}) dialogoConfirmacionComponent: DialogoConfirmacionComponent;
   constructor(private heroesService: ServicioHeroesService,
               private formBuilder: FormBuilder,
               private dialogo: MatDialog,
-              private translateService: TranslateService) {
+              private translateService: TranslateService,
+              private router: Router,
+              private route: ActivatedRoute) {
+    this.heroeEditar$ = this.heroesService.heroeEditar.asObservable();
+    this.mostrarEditar = false;
+    this.mostrarAniadir = false;
+    this.displayColumns = ['id', 'nombre', 'actions'];
+    this.ocultarForm$ = this.heroesService.ocultarForm.asObservable();
   }
-  public formBuscar: FormGroup;
-  public formEditar: FormGroup;
-  public formAniadir: FormGroup;
-  public mostrarEditar = false;
-  public mostrarAniadir = false;
-  public heroes: HeroeModel[];
-  public heroesActualizados$ = this.heroesService.heroesActualizados.asObservable();
-  public heroeEditar$ = this.heroesService.heroeEditar.asObservable();
-  public heroeEditar: HeroeModel;
-  public dataSource: MatTableDataSource<HeroeModel>;
-  public displayColumns: string[] = ['id', 'nombre', 'actions'];
-  @ViewChild(MatPaginator, {static: false}) paginator: MatPaginator;
-  @ViewChild(DialogoConfirmacionComponent, {static: false}) dialogoConfirmacionComponent: DialogoConfirmacionComponent;
+
   ngOnInit(): void {
-    this.heroes = this.heroesService.consultarTodos();
+    this.ocultarForm$.subscribe((value: boolean) => {
+      this.ocultarFormularios();
+      this.cargarHeroes();
+    });
+    this.heroeEditar$.subscribe((value: HeroeModel) => {
+      this.heroeEditar = value;
+    });
+    this.route.queryParams.subscribe(params => {
+      params.form === 'editar' ? this.mostrarFormularioEditar() :
+        params.form === 'añadir' ? this.mostrarFormularioAniadir() :
+      this.ocultarFormularios();
+    });
     this.cargarHeroes();
     this.cargarForms();
+  }
+  public mostrarFormularioEditar(): void {
+    this.mostrarEditar = true;
+    this.mostrarAniadir = false;
+  }
+  public mostrarFormularioAniadir(): void {
+    this.mostrarEditar = false;
+    this.mostrarAniadir = true;
   }
   public cargarForms(): void {
     this.formBuscar = this.formBuilder.group({
       busqueda: [''],
       busquedaPorId: ['']
     });
-    this.heroeEditar$.subscribe((value: HeroeModel) => {
-      this.heroeEditar = value;
-      this.formEditar = this.formBuilder.group({
-        nombre: [value.nombre]
-      });
-      this.formAniadir = this.formBuilder.group({
-        nombre: [null, { validators: [Validators.required] }]
-      });
-    });
+  }
+  public cargarHeroes(): void {
+    this.heroesService.consultarTodos()
+      .subscribe(
+        (response: HeroeModel[]) => {
+          this.heroes = response;
+          this.heroesService.setHeroes(response);
+          this.recargarDataSource();
+          this.ocultarFormularios();
+        },
+        error => {
+          console.log(error);
+        });
   }
   public buscar(): void{
-    const resultado = this.heroesService.consultarHeroePorBusqueda(this.formBuscar.controls.busqueda.value);
-    this.recargar(resultado);
+    this.formBuscar.controls.busquedaPorId.reset('');
+    this.heroesService.consultarHeroePorBusqueda(this.formBuscar.controls.busqueda.value)
+      .subscribe(
+      (response: HeroeModel[]) => {
+        !response.length ? this.recargar([response]) : this.recargar(response);
+      },
+      error => {
+        console.log(error);
+      });
   }
   public buscarPorId(): void{
-    const id = this.formBuscar.controls.busquedaPorId.value ? Number(this.formBuscar.controls.busquedaPorId.value) : -1;
-    const resultado = this.heroesService.consultarHeroe(id);
-    this.recargar(resultado);
+    this.formBuscar.controls.busqueda.reset('');
+    this.heroesService.consultarHeroe(this.formBuscar.controls.busquedaPorId.value)
+      .subscribe(
+      (response: HeroeModel[]) => {
+        !response.length ? this.recargar([response]) : this.recargar(response);
+      },
+      error => {
+        this.recargar([]);
+      });
   }
   public recargar(resultado: any): void {
     this.heroes = resultado;
     this.dataSource.data = resultado;
-  }
-  public cargarHeroes(): void {
-    this.heroesActualizados$.subscribe((value: HeroeModel[]) => {
-      this.heroes = value;
-      this.recargarDataSource();
-      this.ocultarFormularios();
-    });
   }
   public recargarDataSource(): void {
     this.dataSource = new MatTableDataSource<HeroeModel>(this.heroes);
@@ -79,17 +116,16 @@ export class ComponenteHeroesComponent implements OnInit {
   }
   public mostrarFormEditar(heroe: HeroeModel): void {
     this.heroesService.setHeroeEditar(heroe);
-    this.mostrarEditar = true;
-    this.mostrarAniadir = false;
+    this.router.navigate(['tabla-heroes'], { queryParams: { form: 'editar' } });
   }
   public ocultarFormularios(): void {
+    this.router.navigate(['tabla-heroes']);
     this.mostrarAniadir = false;
     this.mostrarEditar = false;
   }
   public mostrarFormAniadir(): void {
     this.heroesService.setHeroeEditar({ id: this.heroes[this.heroes.length - 1].id + 1, nombre: ''});
-    this.mostrarAniadir = true;
-    this.mostrarEditar = false;
+    this.router.navigate(['tabla-heroes'], { queryParams: { form: 'añadir' } });
   }
   public eliminar(id: number): void {
     this.mostrarDialogo(id);
@@ -102,9 +138,16 @@ export class ComponenteHeroesComponent implements OnInit {
       .afterClosed()
       .subscribe((confirmado: boolean) => {
         if (confirmado) {
+          this.heroesService.eliminarHeroe(id)
+            .subscribe(
+            (response: HeroeModel) => {
+              console.log(response);
+              this.cargarHeroes();
+            },
+            error => {
+              console.log(error);
+            });
           this.ocultarFormularios();
-          this.heroesService.eliminarHeroe(id);
-          this.heroesService.actualizar();
         } else {
           this.dialogoConfirmacionComponent.cerrarDialogo();
         }

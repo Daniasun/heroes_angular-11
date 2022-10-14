@@ -6,6 +6,9 @@ import {HeroeModel} from '../models/heroe-model';
 import {of} from 'rxjs';
 
 describe('ServicioHeroesService', () => {
+  let service: ServicioHeroesService;
+  let httpClientSpy: { get: jasmine.Spy };
+
   const mockHeroes = [
     {id: 1, nombre : 'Superman'},
     {id: 2, nombre : 'Spiderman'},
@@ -25,74 +28,91 @@ describe('ServicioHeroesService', () => {
       HttpClientTestingModule
     ]
   }));
+  beforeEach(() => {
+    httpClientSpy = jasmine.createSpyObj('HttpClient', ['get']);
+    service = new ServicioHeroesService(httpClientSpy as any);
+  });
 
-  it(' be created', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.getAll().subscribe(value => {
-      service.heroes = value;
-      service.heroesActualizados.next(value);
-      expect(service.heroes).toEqual(value);
-      service.actualizar();
-    });
+  it('created', () => {
     expect(service).toBeTruthy();
   });
 
-  it(' get heroes', async(() => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    const response: HeroeModel[] = [];
-    spyOn(service, 'getAll').and.returnValue(of(response));
-    service.heroes = response;
-    expect(service.heroes).toEqual(response);
-  }));
-
-  it(' set heroes', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  it('setHeroes() set the heroes at the service', () => {
+    httpClientSpy.get.and.returnValue(of(mockHeroes));
     service.setHeroes(mockHeroes);
     expect(service.heroes).toEqual(mockHeroes);
   });
-
-  it(' consultar Todos', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    expect(service.consultarTodos()).toEqual(mockHeroes);
+  it('consultarTodos() should return Observable', (done: DoneFn) => {
+    httpClientSpy.get.and.returnValue(of(mockHeroes));
+    service.consultarTodos().subscribe(result => {
+      expect(result).toEqual(mockHeroes);
+      done();
+    });
   });
-  it(' consultar Heroe', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    expect(service.consultarHeroe(1)).toEqual([mockHeroes[0]]);
+  it('consultarTodos() should return Observable', (done: DoneFn) => {
+    httpClientSpy.get.and.returnValue(of(mockHeroes));
+    service.consultarTodos().subscribe(result => {
+      expect(result).toEqual(mockHeroes);
+      done();
+    });
   });
-  it(' consultar Heroe no devuelve', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    expect(service.consultarHeroe(10)).toEqual([]);
-  });
-  it(' consultar Heroe Por Busqueda', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    expect(service.consultarHeroePorBusqueda('Super')).toEqual([mockHeroes[0]]);
-  });
-  it(' modificar Heroe', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    const modificado = {id: 1, nombre : 'Superman Modificado'}
-    service.setHeroes(mockHeroes);
-    service.modificarHeroe(modificado);
-    expect(service.consultarHeroePorBusqueda('Modificado')).toEqual([modificado]);
-  });
-  it(' eliminar Heroe', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    service.eliminarHeroe(7);
-    expect(service.heroes.length).toEqual(mockHeroes.length);
-  });
-  it(' añadir Heroe', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroes(mockHeroes);
-    service.aniadirHeroe({id: 8, nombre : 'Pepe'});
-    expect(service.heroes.length).toEqual(mockHeroes.length);
-  });
-  it(' setHeroeEditar', () => {
-    const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
-    service.setHeroeEditar(mockHeroes[0])
-    expect(service.heroeEditarInit).toEqual(mockHeroes[0]);
-  });
+  //
+  // it(' get heroes', async(() => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   const response: HeroeModel[] = [];
+  //   spyOn(service, 'getAll').and.returnValue(of(response));
+  //   service.heroes = response;
+  //   expect(service.heroes).toEqual(response);
+  // }));
+  //
+  // it(' set heroes', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   expect(service.heroes).toEqual(mockHeroes);
+  // });
+  //
+  // it(' consultar Todos', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   expect(service.consultarTodos()).toEqual(mockHeroes);
+  // });
+  // it(' consultar Heroe', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   expect(service.consultarHeroe(1)).toEqual([mockHeroes[0]]);
+  // });
+  // it(' consultar Heroe no devuelve', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   expect(service.consultarHeroe(10)).toEqual([]);
+  // });
+  // it(' consultar Heroe Por Busqueda', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   expect(service.consultarHeroePorBusqueda('Super')).toEqual([mockHeroes[0]]);
+  // });
+  // it(' modificar Heroe', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   const modificado = {id: 1, nombre : 'Superman Modificado'}
+  //   service.setHeroes(mockHeroes);
+  //   service.modificarHeroe(modificado);
+  //   expect(service.consultarHeroePorBusqueda('Modificado')).toEqual([modificado]);
+  // });
+  // it(' eliminar Heroe', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   service.eliminarHeroe(7);
+  //   expect(service.heroes.length).toEqual(mockHeroes.length);
+  // });
+  // it(' añadir Heroe', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroes(mockHeroes);
+  //   service.aniadirHeroe({id: 8, nombre : 'Pepe'});
+  //   expect(service.heroes.length).toEqual(mockHeroes.length);
+  // });
+  // it(' setHeroeEditar', () => {
+  //   const service: ServicioHeroesService = TestBed.get(ServicioHeroesService);
+  //   service.setHeroeEditar(mockHeroes[0])
+  //   expect(service.heroeEditarInit).toEqual(mockHeroes[0]);
+  // });
 });

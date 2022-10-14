@@ -10,8 +10,12 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {HttpClientTestingModule} from '@angular/common/http/testing';
 import {HttpClientModule} from '@angular/common/http';
 import {MatPaginatorModule} from '@angular/material/paginator';
-import {FormBuilder, FormControl, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {async} from '@angular/core/testing';
+import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {RouterTestingModule} from '@angular/router/testing';
+import {Observable, of} from 'rxjs';
+import {Router} from '@angular/router';
 
 const mockHeroes: HeroeModel[] = [
   {id: 1, nombre : 'Superman'},
@@ -22,12 +26,15 @@ const mockHeroes: HeroeModel[] = [
   {id: 6, nombre : 'IronMan'},
   {id: 7, nombre : 'Goku'}
 ];
-
+class MockRouter {
+  navigateByUrl(url: string): string { return url; }
+}
 describe('ComponenteHeroesComponent', () => {
   let component: ComponenteHeroesComponent;
   let fixture: ComponentFixture<ComponenteHeroesComponent>;
   let heroesService: ServicioHeroesService;
   let formBuilder: FormBuilder;
+  let routerSpy = {navigate: jasmine.createSpy('navigate')};
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -40,12 +47,17 @@ describe('ComponenteHeroesComponent', () => {
         HttpClientModule,
         HttpClientTestingModule,
         BrowserAnimationsModule,
-        TranslateModule.forRoot()
+        TranslateModule.forRoot(),
+        MatDialogModule,
+        RouterTestingModule
       ],
       providers: [
         ServicioHeroesService,
         TranslateService,
-
+        FormBuilder,
+        { provide: MAT_DIALOG_DATA, useValue: {} },
+        { provide: MatDialogRef, useValue: {} },
+        { provide: FormGroup, useValue: {} }
       ],
       schemas: [
         CUSTOM_ELEMENTS_SCHEMA,
@@ -53,6 +65,8 @@ describe('ComponenteHeroesComponent', () => {
       ]
     })
     .compileComponents();
+    fixture = TestBed.createComponent(ComponenteHeroesComponent);
+    component = fixture.componentInstance;
   }));
 
   beforeEach(inject([ServicioHeroesService], s => {
@@ -71,122 +85,142 @@ describe('ComponenteHeroesComponent', () => {
     component.heroes = mockHeroes;
     component.dataSource = new MatTableDataSource<HeroeModel>(component.heroes);
     component.dataSource.data = mockHeroes;
-    component.formBuscar = formBuilder.group({
-      busqueda: [''],
-      busquedaPorId: ['']
-    });
+    component.ocultarForm$ = heroesService.ocultarForm.asObservable();
+    component.heroeEditar$ = heroesService.heroeEditar.asObservable();
+
     fixture.detectChanges();
   });
-
-
   it(' create', () => {
     expect(component).toBeTruthy();
+    expect(component.dataSource).toBeTruthy();
+    expect(component.dataSource.data).toBeTruthy();
+    expect(component.formBuscar.controls).toBeTruthy();
+    expect(component.ocultarForm$).toBeTruthy();
+    expect(component.heroeEditar$).toBeTruthy();
+    fixture.detectChanges();
+    heroesService.ocultarForm.next(true);
+    component.ocultarForm$.subscribe((value: boolean) => {
+      component.ocultarFormularios();
+      component.cargarHeroes();
+      expect(component.ocultarFormularios).toHaveBeenCalled();
+      expect(component.cargarHeroes).toHaveBeenCalled();
+    });
+    heroesService.heroeEditar.next(mockHeroes[0]);
+    component.heroeEditar$.subscribe((value: HeroeModel) => {
+      component.heroeEditar = value;
+      expect(component.heroeEditar).toEqual(mockHeroes[0]);
+    });
   });
-  it(' buscar', () => {
-    heroesService.setHeroes(mockHeroes);
-    heroesService.actualizar();
+  it(' cargarHeroes', () => {
+    const spy = spyOn(heroesService, 'consultarTodos').and.returnValue(of(mockHeroes));
+    heroesService.consultarTodos()
+      .subscribe(
+        (response: HeroeModel[]) => {
+          component.heroes = response;
+          heroesService.setHeroes(response);
+          component.recargarDataSource();
+          component.ocultarFormularios();
+        },
+        error => {
+          console.log(error);
+        });
     component.heroes = mockHeroes;
-    fixture.detectChanges();
-    component.formBuscar.setValue({
-      busqueda: 'S',
-      busquedaPorId: '1'
-    });
-    expect(component.formBuscar.controls.busqueda.value).toBe('S');
-    fixture.detectChanges();
-    let resultado = heroesService.consultarHeroePorBusqueda(component.formBuscar.controls.busqueda.value);
-    component.buscar();
-    fixture.detectChanges();
-    expect(resultado).toEqual([heroesService.heroes[0], heroesService.heroes[1]]);
-    component.formBuscar.setValue({
-      busqueda: 'algoQueNoEncuentra',
-      busquedaPorId: '1'
-    });
-    resultado = heroesService.consultarHeroePorBusqueda(component.formBuscar.controls.busqueda.value);
-    fixture.detectChanges();
-    component.buscar();
-    fixture.detectChanges();
-    expect(resultado).toEqual([]);
-
+    heroesService.setHeroes(mockHeroes);
+    component.recargarDataSource();
+    component.ocultarFormularios();
+    expect(component.heroes).toBe(mockHeroes);
   });
-  it(' buscar por Id', () => {
-    heroesService.setHeroes(mockHeroes);
-    heroesService.actualizar();
-    component.heroes = mockHeroes;
-    fixture.detectChanges();
-    heroesService.heroes = mockHeroes;
-    component.formBuscar.setValue({
-      busqueda: 'S',
-      busquedaPorId: '1'
-    });
-    expect(component.formBuscar.controls.busquedaPorId.value).toBe('1');
-    fixture.detectChanges();
-    const resultado = heroesService.consultarHeroe(Number(component.formBuscar.controls.busquedaPorId.value));
+  it('buscar', () => {
+    component.formBuscar.controls.busquedaPorId.reset('');
+    component.formBuscar.controls.busqueda.setValue('Superman');
+    component.buscar();
+    heroesService.consultarHeroePorBusqueda(component.formBuscar.controls.busqueda.value)
+      .subscribe(
+        (response: HeroeModel[]) => {
+          !response.length ? component.recargar([response]) : component.recargar(response);
+          component.recargar(response);
+          expect(component.recargar(response)).toHaveBeenCalled();
+        },
+        error => {
+          console.log(error);
+        });
+  });
+  it(' buscarPorId', () => {
+    component.formBuscar.controls.busqueda.reset('');
+    component.formBuscar.controls.busquedaPorId.setValue('1');
     component.buscarPorId();
-    heroesService.actualizar();
-    fixture.detectChanges();
-    expect(resultado).toEqual([heroesService.heroes[0]]);
-  });
-  it(' cargar Heroes', () => {
-    heroesService.setHeroes(mockHeroes);
-    component.heroes = mockHeroes;
-    component.recargarDataSource();
-    component.ocultarFormularios();
-    expect(component.heroes).toEqual(mockHeroes);
-  });
-  it(' recargar DataSource', () => {
-    component.heroes = mockHeroes;
-    component.dataSource = new MatTableDataSource<HeroeModel>(component.heroes);
-    component.dataSource.paginator = component.paginator;
-    heroesService.setHeroes(mockHeroes);
-    component.recargarDataSource();
-    expect(component.dataSource.data).toEqual(mockHeroes);
-  });
-  it(' mostrar Form Editar', () => {
-    heroesService.setHeroes(mockHeroes);
-    component.mostrarFormEditar(mockHeroes[0]);
-    component.formEditar = formBuilder.group({
-      nombre: new FormControl(component.heroeEditar.nombre, [Validators.required])
-    });
-    expect(component.mostrarEditar).toEqual(true);
-    expect(component.mostrarAniadir).toEqual(false);
-    expect(component.heroeEditar).toEqual(mockHeroes[0]);
-    expect(component.formEditar.get('nombre')).toBeTruthy();
-  });
-  it(' ocultar Formularios', () => {
-    component.ocultarFormularios();
-    expect(component.mostrarEditar).toEqual(false);
-    expect(component.mostrarAniadir).toEqual(false);
-  });
-
-
-  it(' mostrar Form Añadir', () => {
-    heroesService.setHeroes(mockHeroes);
-    component.heroes = mockHeroes;
-    component.heroeEditar = { id: component.heroes.length + 1, nombre: ''};
-    component.mostrarFormAniadir();
-    component.formAniadir = formBuilder.group({
-      nombre: new FormControl(component.heroeEditar.nombre, [Validators.required])
-    });
-    expect(component.mostrarAniadir).toEqual(true);
-    expect(component.mostrarEditar).toEqual(false);
-    expect(component.heroeEditar).toEqual({ id: component.heroes[component.heroes.length - 1].id + 1 , nombre: ''});
-    expect(component.formAniadir.get('nombre').value).toEqual('');
-  });
-  it(' eliminar', () => {
-    heroesService.setHeroes(mockHeroes);
-    component.heroes = mockHeroes;
-    const longitudArray = mockHeroes.length;
-    component.eliminar(mockHeroes[0].id);
-    expect(mockHeroes.length).toEqual(longitudArray - 1);
+    heroesService.consultarHeroe(component.formBuscar.controls.busquedaPorId.value)
+      .subscribe(
+        (response: HeroeModel[]) => {
+          !response.length ? component.recargar([response]) : component.recargar(response);
+          component.recargar(response);
+          expect(component.recargar(response)).toHaveBeenCalled();
+        },
+        error => {
+          console.log(error);
+        });
   });
   it(' recargar', () => {
-    component.recargar(mockHeroes);
-    expect(component.heroes).toEqual(mockHeroes);
-    expect(component.dataSource.data).toEqual(mockHeroes);
-    heroesService.setHeroes(mockHeroes);
+    const resultado = mockHeroes;
+    component.recargar(resultado);
+    expect(component.heroes).toEqual(resultado);
+    expect(component.dataSource.data).toEqual(resultado);
+  });
+  it(' recargarDataSource', () => {
     component.heroes = mockHeroes;
-    const longitudArray = mockHeroes.length;
-    component.eliminar(mockHeroes[0].id);
-    expect(mockHeroes.length).toEqual(longitudArray - 1);
+    component.recargarDataSource();
+    component.dataSource = new MatTableDataSource<HeroeModel>(component.heroes);
+    component.dataSource.paginator = component.paginator;
+  });
+  it(' mostrarFormEditar', () => {
+    const spy = spyOn(heroesService, 'setHeroeEditar').withArgs(mockHeroes[0]).and.stub();
+    heroesService.setHeroeEditar(mockHeroes[0]);
+    expect(spy).toHaveBeenCalled();
+    heroesService.heroeEditar.next(mockHeroes[0]);
+    expect(component.heroeEditar).toEqual(mockHeroes[0]);
+    routerSpy.navigate(['tabla-heroes'], { queryParams: { form: 'editar' } });
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['tabla-heroes'], { queryParams: { form: 'editar' } });
+    const url = routerSpy.navigate.calls.first().args[0];
+    expect(url).toEqual(['tabla-heroes']);
+  });
+  it(' mostrarFormAniadir', () => {
+    component.heroes = mockHeroes;
+    heroesService.setHeroeEditar({ id: component.heroes[component.heroes.length - 1].id + 1, nombre: ''});
+    routerSpy.navigate(['tabla-heroes'], { queryParams: { form: 'añadir' } });
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['tabla-heroes'], { queryParams: { form: 'añadir' } });
+    const url = routerSpy.navigate.calls.first().args[0];
+    expect(url).toEqual(['tabla-heroes']);
+  });
+  it(' eliminar', () => {
+    component.mostrarDialogo(1);
+    const spy = spyOn(component, 'mostrarDialogo').withArgs(1).and.stub();
+    component.mostrarDialogo(1);
+    expect(spy).toHaveBeenCalled();
+  });
+  it(' mostrarFormularioEditar', () => {
+    component.mostrarFormularioEditar();
+    fixture.detectChanges();
+    expect(component.mostrarEditar).toBeTrue();
+    expect(component.mostrarAniadir).toBeFalse();
+  });
+  it(' mostrarFormularioAniadir', () => {
+    component.mostrarFormularioAniadir();
+    fixture.detectChanges();
+    expect(component.mostrarAniadir).toBeTrue();
+    expect(component.mostrarEditar).toBeFalse();
+  });
+  it(' cargarForms', () => {
+    component.cargarForms();
+    formBuilder = TestBed.inject(FormBuilder);
+    component.formBuscar = formBuilder.group({
+      busqueda: new FormControl(
+        {
+          value: ['']
+        }),
+      busquedaPorId: new FormControl(
+        {
+          value: ['']
+        })
+    });
   });
 });

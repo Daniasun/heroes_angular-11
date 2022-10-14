@@ -17,6 +17,8 @@ import {CambioIdiomaModule} from './components/cambio-idioma/cambio-idioma.modul
 import {DialogoConfirmacionComponent} from './components/dialogo-confirmacion/dialogo-confirmacion.component';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
+import {SpinnerService} from './services/spinner.service';
+import {LoadingInterceptor} from './interceptor/loading.interceptor';
 
 /**
  *  i18n: ngx-translate. Función necesaria para compilacion AOT
@@ -57,7 +59,9 @@ export function HttpLoaderFactory(http: HttpClient): MultiTranslateHttpLoader  {
   ],
   providers: [
     ServicioHeroesService,
-    HttpClientModule
+    HttpClientModule,
+    SpinnerService,
+    { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true }
   ],
   bootstrap: [AppComponent],
   entryComponents: [
